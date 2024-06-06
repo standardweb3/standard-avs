@@ -1,39 +1,52 @@
 # Standard market maker AVS
 
-|                     | Standard Eigenlayer AVS market maker                                                                                                                  | CoWswap Solver                        |
-|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
-| Mission             | Spread buy/sell orders in the orderbook within 2% spread on market price                                                                     | Match orders in whatever solvers want |
-| Verification method | Measure bid/ask head price and check with last market price that its difference is within 2% of the market price in orderbook smart contract | Moo                                   |
-| Transparent         | Yes                                                                                                                                          | Moo                                   |
-| Centralization Risk | None, all transparent and clear, all done in smart contract                                                                                  | Payment for order flow can happen, which is illegal.     |
+|                     | Standard Eigenlayer AVS market maker                                                                                                         | CoWswap Solver                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Mission             | Spread buy/sell orders in the orderbook within 2% spread on market price                                                                     | Match orders in whatever solvers want                |
+| Verification method | Measure bid/ask head price and check with last market price that its difference is within 2% of the market price in orderbook smart contract | Moo                                                  |
+| Transparent         | Yes                                                                                                                                          | Moo                                                  |
+| Centralization Risk | None, all transparent and clear, all done in smart contract                                                                                  | Payment for order flow can happen. |
 
-This is an Eigenlayer AVS by Standard to improve on solver design from async swap learned from [Uniswap hook incubator](https://atrium.academy/uniswap).
+This is an Eigenlayer AVS by Standard to improve on solver design from async swap by CoWswap. The software was generated for capstone project for  [Uniswap hook incubator](https://atrium.academy/uniswap).
 
 This project shows you the simplest functionality you can expect from an AVS with market making orderbook.
 
-It will give you a concrete understanding of the basic components.
+The diagram will give you a concrete understanding of the basic components with two cases.
 
-![hello-world-png](./assets/hello-world-diagram.png)
+### 1. Registering MM to service contract manager
 
-There are 5 steps to this AVS:
-- AVS consumer requests a "Hello World" message to be generated and signed
-- AVS takes on the request by emitting an event for operators to pick up the request
-- any operator who is staked to serve this AVS takes this request, generates this message and signs it
-- the operator submits this message with their signature back to the AVS
-- *if the operator is in fact registered to the AVS and has the minimum needed stake, the submission is accepted*
+![mm-registration-png](./assets/mm_registration.png)
 
-That's it. This simple flow highlights some of the core mechanics of how AVSs work.
+There are 4 steps to this AVS registration for MM operators:
+
+- AVS operator wallet submits registration request for MM profile
+- Check Pair in DEX and make MM profile if operator.stake >= avs.minNeededStake
+- event: MM registered
+- AVS operator client starts submitting orders
+
+### 2. Verifying MM is acting as according to limit
+
+![mm-verification-png](./assets/mm_verification.png)
+
+There are 4 steps to this AVS verificaiton and penalty:
+
+- AVS verifier finds anomaly on order spread and verify
+- Suppose spl is spread limit, MMServiceManager gives penalty if pair.askHead >= marketPrice * (1 + spl) || pair.bidHead <= marketPrice * (1- spl) after getting bidHead(Highest Bid) askHead(Lowest Ask) prices
+- event: MM Penalty
+- AVS operator client stops submitting orders
+
 
 Where additional sophistication with AVSs come into the picture:
+
 - the nature of the request is more sophisicated than generating a constant string
-- the operators might need to coordinate with each other
+- the operators might need to coordinate with each other, but not sure how penalty is applied 
 - the type of signature is different based on the constraints of the service
 - the type and amount of security used to secure the AVS
 - and so on...
 
 ## Quick Start
 
-### Dependencies 
+### Dependencies
 
 1. [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 2. [Foundry](https://getfoundry.sh/)
@@ -44,13 +57,15 @@ Where additional sophistication with AVSs come into the picture:
 1. Make sure Docker is running
 2. Run `make start-chain-with-contracts-deployed`
 
-    2.1 This will build the contracts, start an Anvil chain, deploy the contracts to it, and leaves the chain running in the current terminal
+   2.1 This will build the contracts, start an Anvil chain, deploy the contracts to it, and leaves the chain running in the current terminal
+
 3. Open new terminal tab and run `make start-operator`
 
-    3.1 This will compile the AVS software and start monitering new tasks
-4. Open new terminal tab and run `make spam-tasks` (Optional) 
+   3.1 This will compile the AVS software and start monitering new tasks
 
-    4.1 This will spam the AVS with random names every 15 seconds
+4. Open new terminal tab and run `make spam-tasks` (Optional)
+
+   4.1 This will spam the AVS with random names every 15 seconds
 
 ## Extensions
 
