@@ -15,7 +15,7 @@ import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStak
 import {Quorum, StrategyParams} from "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
 
-import {HelloWorldServiceManager, IServiceManager} from "../src/HelloWorldServiceManager.sol";
+import {MMServiceManager, IServiceManager} from "../src/MMServiceManager.sol";
 import "../src/ERC20Mock.sol";
 
 import {Utils} from "./utils/Utils.sol";
@@ -40,8 +40,8 @@ contract HelloWorldDeployer is Script, Utils {
     ECDSAStakeRegistry public stakeRegistry;
     ECDSAStakeRegistry public stakeRegistryImplementation;
 
-    HelloWorldServiceManager public helloWorldServiceManager;
-    HelloWorldServiceManager public helloWorldServiceManagerImplementation;
+    MMServiceManager public MMServiceManager;
+    MMServiceManager public MMServiceManagerImplementation;
 
     function run() external {
         // Eigenlayer contracts
@@ -173,7 +173,7 @@ contract HelloWorldDeployer is Script, Utils {
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        helloWorldServiceManager = HelloWorldServiceManager(
+        MMServiceManager = MMServiceManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -228,14 +228,14 @@ contract HelloWorldDeployer is Script, Utils {
                 address(stakeRegistryImplementation),
                 abi.encodeWithSelector(
                     ECDSAStakeRegistry.initialize.selector,
-                    address(helloWorldServiceManager),
+                    address(MMServiceManager),
                     1,
                     quorum
                 )
             );
         }
 
-        helloWorldServiceManagerImplementation = new HelloWorldServiceManager(
+        MMServiceManagerImplementation = new MMServiceManager(
             address(avsDirectory),
             address(stakeRegistry),
             address(delegationManager)
@@ -243,9 +243,9 @@ contract HelloWorldDeployer is Script, Utils {
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         helloWorldProxyAdmin.upgrade(
             TransparentUpgradeableProxy(
-                payable(address(helloWorldServiceManager))
+                payable(address(MMServiceManager))
             ),
-            address(helloWorldServiceManagerImplementation)
+            address(MMServiceManagerImplementation)
         );
 
         // WRITE JSON DATA
@@ -264,13 +264,13 @@ contract HelloWorldDeployer is Script, Utils {
         );
         vm.serializeAddress(
             deployed_addresses,
-            "HelloWorldServiceManager",
-            address(helloWorldServiceManager)
+            "MMServiceManager",
+            address(MMServiceManager)
         );
         vm.serializeAddress(
             deployed_addresses,
-            "HelloWorldServiceManagerImplementation",
-            address(helloWorldServiceManagerImplementation)
+            "MMServiceManagerImplementation",
+            address(MMServiceManagerImplementation)
         );
         vm.serializeAddress(
             deployed_addresses,

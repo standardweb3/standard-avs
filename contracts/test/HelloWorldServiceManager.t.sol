@@ -1,14 +1,14 @@
 // // SPDX-License-Identifier: UNLICENSED
 // pragma solidity ^0.8.12;
 
-// import "../src/HelloWorldServiceManager.sol" as hwsm;
+// import "../src/MMServiceManager.sol" as hwsm;
 // import {HelloWorldTaskManager} from "../src/HelloWorldTaskManager.sol";
 // import {MockAVSDeployer} from "@eigenlayer-middleware/test/utils/MockAVSDeployer.sol";
 // import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 // contract HelloWorldTaskManagerTest is MockAVSDeployer {
-//     incsqsm.HelloWorldServiceManager sm;
-//     incsqsm.HelloWorldServiceManager smImplementation;
+//     incsqsm.MMServiceManager sm;
+//     incsqsm.MMServiceManager smImplementation;
 //     HelloWorldTaskManager tm;
 //     HelloWorldTaskManager tmImplementation;
 
