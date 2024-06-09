@@ -7,7 +7,6 @@ import "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import "@eigenlayer/contracts/permissions/Pausable.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
-import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {TransferHelper} from "./libraries/TransferHelper.sol";
 import {IEngine} from "./interfaces/IEngine.sol";
 
@@ -20,13 +19,14 @@ import "./IMMServiceManager.sol";
 contract MMServiceManager is
     ECDSAServiceManagerBase,
     IMMServiceManager,
-    Pausable,
-    AccessControl
+    Pausable
 {
     using BytesLib for bytes;
     using ECDSAUpgradeable for bytes32;
 
     bytes32 public constant MM_ROLE = keccak256("MM_ROLE");
+
+    error InvalidAccess(bytes32 role, address account);
 
     /* STORAGE */
     // The latest task index
@@ -53,6 +53,9 @@ contract MMServiceManager is
 
     // mapping of each MM task's managing pair
     mapping(bytes32 => Pair) public allManagingPairs;
+
+    // mapping of MM task owners on task hash
+    mapping(bytes32 => address) public allTaskOwners;
 
     // event for agent registration on MM task
     event MMAgentRegistered(bytes32 taskHash, address agent);
@@ -92,18 +95,19 @@ contract MMServiceManager is
         newTask.taskCreatedBlock = uint32(block.number);
 
         // store hash of task onchain, emit event, and increase taskNum
+        bytes32 taskHash = keccak256(abi.encode(newTask));
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(newTask));
         emit NewTaskCreated(latestTaskNum, newTask);
         latestTaskNum = latestTaskNum + 1;
-        _grantRole(MM_ROLE, msg.sender);
+        allTaskOwners[taskHash] = msg.sender;
     }
 
     function addMMAgent(Task calldata task, address agent) external {
-        if (!hasRole(MM_ROLE, msg.sender)) {
+        bytes32 taskHash = keccak256(abi.encode(task));
+        if (allTaskOwners[taskHash] != msg.sender) {
             revert InvalidAccess(MM_ROLE, msg.sender);
         }
-        bytes32 taskHash = keccak256(abi.encode(task));
-        Pair pair = allManagingPairs[taskHash];
+        Pair memory pair = allManagingPairs[taskHash];
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
         TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
         emit MMAgentRegistered(taskHash, agent);
@@ -131,17 +135,19 @@ contract MMServiceManager is
             "Operator has already responded to the task"
         );
 
+        Pair memory pair = allManagingPairs[taskHash];
+        
+
         // Approve just in case approval amount has run out, later add check on allowance
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
         TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
 
         // Execute trade
-        Pair pair = allManagingPairs[taskHash];
         TransferHelper.safeTransferFrom(isBid ? pair.quote : pair.base, msg.sender, address(this), amount);
         if(isBid) {
-            IEngine(matchingEngine).limitBuy(pair.base, pair.quote, price, amount, true, n, msg.sender);
+            IEngine(matchingEngine).limitBuy(pair.base, pair.quote, price, amount, true, n, 0, msg.sender);
         } else {
-            IEngine(matchingEngine).limitSell(pair.base, pair.quote, price, amount, true, n, msg.sender);
+            IEngine(matchingEngine).limitSell(pair.base, pair.quote, price, amount, true, n, 0, msg.sender);
         }
         
 

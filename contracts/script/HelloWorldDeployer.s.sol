@@ -40,7 +40,7 @@ contract HelloWorldDeployer is Script, Utils {
     ECDSAStakeRegistry public stakeRegistry;
     ECDSAStakeRegistry public stakeRegistryImplementation;
 
-    MMServiceManager public MMServiceManager;
+    MMServiceManager public mmServiceManager;
     MMServiceManager public MMServiceManagerImplementation;
 
     function run() external {
@@ -173,7 +173,7 @@ contract HelloWorldDeployer is Script, Utils {
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        MMServiceManager = MMServiceManager(
+        mmServiceManager = MMServiceManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -228,7 +228,7 @@ contract HelloWorldDeployer is Script, Utils {
                 address(stakeRegistryImplementation),
                 abi.encodeWithSelector(
                     ECDSAStakeRegistry.initialize.selector,
-                    address(MMServiceManager),
+                    address(mmServiceManager),
                     1,
                     quorum
                 )
@@ -243,7 +243,7 @@ contract HelloWorldDeployer is Script, Utils {
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         helloWorldProxyAdmin.upgrade(
             TransparentUpgradeableProxy(
-                payable(address(MMServiceManager))
+                payable(address(mmServiceManager))
             ),
             address(MMServiceManagerImplementation)
         );
@@ -265,7 +265,7 @@ contract HelloWorldDeployer is Script, Utils {
         vm.serializeAddress(
             deployed_addresses,
             "MMServiceManager",
-            address(MMServiceManager)
+            address(mmServiceManager)
         );
         vm.serializeAddress(
             deployed_addresses,
