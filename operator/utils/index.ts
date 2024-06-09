@@ -12,3 +12,13 @@ export {
 export {
     PairAddedHandleTokenPairOrderbook
 } from "./PairAdded"
+
+
+// Agent related event functions
+export * from "./MMAgentAdded";
+
+export * from "./MMAgentPenalized";
+
+export * from "./NewTaskCreated";
+
+export * from "./TaskResponded";

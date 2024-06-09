@@ -116,4 +116,6 @@ export const OrderPlacedHandleAccountOrders = async (
       txHash: event.transaction.hash,
     },
   });
+
+  // Match placed order if the market maker can afford
 };

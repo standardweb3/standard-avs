@@ -88,7 +88,11 @@ contract MMServiceManager is
 
     /* FUNCTIONS */
     // NOTE: this function creates new task, assigns it a taskId
-    function createNewTask(string memory name, address base, address quote) external {
+    function createNewTask(
+        string memory name,
+        address base,
+        address quote
+    ) external {
         // create a new task struct
         Task memory newTask;
         newTask.name = name;
@@ -97,6 +101,7 @@ contract MMServiceManager is
         // store hash of task onchain, emit event, and increase taskNum
         bytes32 taskHash = keccak256(abi.encode(newTask));
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(newTask));
+        allManagingPairs[taskHash] = Pair({base: base, quote: quote});
         emit NewTaskCreated(latestTaskNum, newTask);
         latestTaskNum = latestTaskNum + 1;
         allTaskOwners[taskHash] = msg.sender;
@@ -109,7 +114,11 @@ contract MMServiceManager is
         }
         Pair memory pair = allManagingPairs[taskHash];
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
-        TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
+        TransferHelper.safeApprove(
+            pair.quote,
+            address(this),
+            type(uint256).max
+        );
         emit MMAgentRegistered(taskHash, agent);
     }
 
@@ -136,20 +145,45 @@ contract MMServiceManager is
         );
 
         Pair memory pair = allManagingPairs[taskHash];
-        
 
         // Approve just in case approval amount has run out, later add check on allowance
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
-        TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
+        TransferHelper.safeApprove(
+            pair.quote,
+            address(this),
+            type(uint256).max
+        );
 
         // Execute trade
-        TransferHelper.safeTransferFrom(isBid ? pair.quote : pair.base, msg.sender, address(this), amount);
-        if(isBid) {
-            IEngine(matchingEngine).limitBuy(pair.base, pair.quote, price, amount, true, n, 0, msg.sender);
+        TransferHelper.safeTransferFrom(
+            isBid ? pair.quote : pair.base,
+            msg.sender,
+            address(this),
+            amount
+        );
+        if (isBid) {
+            IEngine(matchingEngine).limitBuy(
+                pair.base,
+                pair.quote,
+                price,
+                amount,
+                true,
+                n,
+                0,
+                msg.sender
+            );
         } else {
-            IEngine(matchingEngine).limitSell(pair.base, pair.quote, price, amount, true, n, 0, msg.sender);
+            IEngine(matchingEngine).limitSell(
+                pair.base,
+                pair.quote,
+                price,
+                amount,
+                true,
+                n,
+                0,
+                msg.sender
+            );
         }
-        
 
         // updating the storage with task responsea
         allTaskResponses[msg.sender][referenceTaskIndex] = signature;
