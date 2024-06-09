@@ -7,23 +7,37 @@ import "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import "@eigenlayer/contracts/permissions/Pausable.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
+import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {TransferHelper} from "./libraries/TransferHelper.sol";
+import {IEngine} from "./interfaces/IEngine.sol";
+
 import "./IMMServiceManager.sol";
 
 /**
  * @title Primary entrypoint for procuring services from HelloWorld.
  * @author Eigen Labs, Inc.
  */
-contract MMServiceManager is 
+contract MMServiceManager is
     ECDSAServiceManagerBase,
     IMMServiceManager,
-    Pausable
+    Pausable,
+    AccessControl
 {
     using BytesLib for bytes;
     using ECDSAUpgradeable for bytes32;
 
+    bytes32 public constant MM_ROLE = keccak256("MM_ROLE");
+
     /* STORAGE */
     // The latest task index
     uint32 public latestTaskNum;
+
+    address matchingEngine;
+
+    struct Pair {
+        address base;
+        address quote;
+    }
 
     // mapping of task indices to all tasks hashes
     // when a task is created, task hash is stored here,
@@ -34,12 +48,23 @@ contract MMServiceManager is
     // mapping of task indices to hash of abi.encode(taskResponse, taskResponseMetadata)
     mapping(address => mapping(uint32 => bytes)) public allTaskResponses;
 
+    // mapping of each MM agents' MM task
+    mapping(address => bytes32) public allAssignedMMTasks;
+
+    // mapping of each MM task's managing pair
+    mapping(bytes32 => Pair) public allManagingPairs;
+
+    // event for agent registration on MM task
+    event MMAgentRegistered(bytes32 taskHash, address agent);
+
+    // event for agent penalty on MM task
+    event MMAgentPenalized(bytes32 taskHash, address agent);
+
     /* MODIFIERS */
     modifier onlyOperator() {
         require(
-            ECDSAStakeRegistry(stakeRegistry).operatorRegistered(msg.sender) 
-            == 
-            true, 
+            ECDSAStakeRegistry(stakeRegistry).operatorRegistered(msg.sender) ==
+                true,
             "Operator must be the caller"
         );
         _;
@@ -58,12 +83,9 @@ contract MMServiceManager is
         )
     {}
 
-
     /* FUNCTIONS */
     // NOTE: this function creates new task, assigns it a taskId
-    function createNewTask(
-        string memory name
-    ) external {
+    function createNewTask(string memory name, address base, address quote) external {
         // create a new task struct
         Task memory newTask;
         newTask.name = name;
@@ -73,18 +95,34 @@ contract MMServiceManager is
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(newTask));
         emit NewTaskCreated(latestTaskNum, newTask);
         latestTaskNum = latestTaskNum + 1;
+        _grantRole(MM_ROLE, msg.sender);
+    }
+
+    function addMMAgent(Task calldata task, address agent) external {
+        if (!hasRole(MM_ROLE, msg.sender)) {
+            revert InvalidAccess(MM_ROLE, msg.sender);
+        }
+        bytes32 taskHash = keccak256(abi.encode(task));
+        Pair pair = allManagingPairs[taskHash];
+        TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
+        TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
+        emit MMAgentRegistered(taskHash, agent);
     }
 
     // NOTE: this function responds to existing tasks.
     function respondToTask(
         Task calldata task,
         uint32 referenceTaskIndex,
+        bool isBid,
+        uint256 price,
+        uint256 amount,
+        uint32 n,
         bytes calldata signature
     ) external onlyOperator {
+        bytes32 taskHash = keccak256(abi.encode(task));
         // check that the task is valid, hasn't been responsed yet, and is being responded in time
         require(
-            keccak256(abi.encode(task)) ==
-                allTaskHashes[referenceTaskIndex],
+            taskHash == allTaskHashes[referenceTaskIndex],
             "supplied task does not match the one recorded in the contract"
         );
         // some logical checks
@@ -93,14 +131,19 @@ contract MMServiceManager is
             "Operator has already responded to the task"
         );
 
-        // The message that was signed
-        bytes32 messageHash = keccak256(abi.encodePacked("Hello, ", task.name));
-        bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
+        // Approve just in case approval amount has run out, later add check on allowance
+        TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
+        TransferHelper.safeApprove(pair.quote, address(this), type(uint256).max);
 
-        // Recover the signer address from the signature
-        address signer = ethSignedMessageHash.recover(signature);
-
-        require(signer == msg.sender, "Message signer is not operator");
+        // Execute trade
+        Pair pair = allManagingPairs[taskHash];
+        TransferHelper.safeTransferFrom(isBid ? pair.quote : pair.base, msg.sender, address(this), amount);
+        if(isBid) {
+            IEngine(matchingEngine).limitBuy(pair.base, pair.quote, price, amount, true, n, msg.sender);
+        } else {
+            IEngine(matchingEngine).limitSell(pair.base, pair.quote, price, amount, true, n, msg.sender);
+        }
+        
 
         // updating the storage with task responsea
         allTaskResponses[msg.sender][referenceTaskIndex] = signature;

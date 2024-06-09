@@ -15,7 +15,7 @@ There are 4 steps to this AVS registration for MM operators:
 
 - AVS operator wallet submits registration request for MM profile
 - Check Pair in DEX and make MM profile if operator.stake >= avs.minNeededStake
-- event: MM registered
+- event: MMRegistered(bytes32 taskHash, address agent)
 - AVS operator client starts submitting orders
 
 ### 2. Verifying MM is acting as according to limit
@@ -26,7 +26,7 @@ There are 4 steps to this AVS verificaiton and penalty:
 
 - AVS verifier finds anomaly on order spread and verify
 - Suppose spl is spread limit, MMServiceManager gives penalty if pair.askHead >= marketPrice * (1 + spl) || pair.bidHead <= marketPrice * (1- spl) after getting bidHead(Highest Bid) askHead(Lowest Ask) prices
-- event: MM Penalty
+- event: MMPenalized(bytes32 taskHash, address agent);
 - AVS operator client stops submitting orders
 
 
