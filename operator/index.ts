@@ -113,27 +113,6 @@ ponder.on("matchingEngine:OrderPlaced", async ({ event, context }) => {
       BidOrder,
       BidOrderHistory
     );
-
-    // Get all tasks related to pair
-    const tasks = await AgentTask.findMany({
-      where: { base: pair!.base, quote: pair!.quote },
-    });
-    // if there is none, return
-    if (tasks === null) return;
-
-    // Get assigned agents from each task
-    tasks.items.map(async (task) => {
-      const agent = await Agent.findUnique({
-       id: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`).address.concat("-").concat(task.id.toString())
-      })
-
-      // if there is none, return
-      if (agent === null) return;
-      
-      // respond to assigned task
-      await respondToTask(pair, context, ServiceManager[context.network.chainId], agent!.assignedTask, event.args.isBid, event.args.price, event.args.placed, 1);
-
-    });
   } else {
     await OrderPlacedHandleAccountOrders(
       event,
@@ -143,6 +122,37 @@ ponder.on("matchingEngine:OrderPlaced", async ({ event, context }) => {
       AskOrderHistory
     );
   }
+
+  // Get all tasks related to pair
+  const tasks = await AgentTask.findMany({
+    where: { base: pair!.base, quote: pair!.quote },
+  });
+  // if there is none, return
+  if (tasks === null) return;
+
+  // Get assigned agents from each task
+  tasks.items.map(async (task) => {
+    const agent = await Agent.findUnique({
+      id: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
+        .address.concat("-")
+        .concat(task.id.toString()),
+    });
+
+    // if there is none, return
+    if (agent === null) return;
+
+    // respond to assigned task
+    await respondToTask(
+      pair,
+      context,
+      ServiceManager[context.network.chainId],
+      agent!.assignedTask,
+      !event.args.isBid,
+      event.args.price,
+      event.args.placed,
+      1
+    );
+  });
 });
 
 ponder.on("matchingEngine:OrderCanceled", async ({ event, context }) => {
