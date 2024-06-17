@@ -59,6 +59,7 @@ Where additional sophistication with AVSs come into the picture:
 ### Steps
 
 1. Make sure Docker is running
+
 2. Run `make start-chain-with-contracts-deployed`
 
    2.1 This will build the contracts, start an Anvil chain, deploy the contracts to it, and leaves the chain running in the current terminal
@@ -70,6 +71,10 @@ Where additional sophistication with AVSs come into the picture:
 4. Open new terminal tab and run `make spam-tasks` (Optional)
 
    4.1 This will spam the AVS with random names every 15 seconds
+
+### Deploy
+
+Operator can be deployed with [Railway](https://railway.app/) thanks to [Ponder](https://ponder.sh/) after registering an operator wallet to service manager contract. Check this [guide](https://ponder.sh/docs/production/deploy) on how to deploy.
 
 ## Extensions
 
