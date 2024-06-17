@@ -7,3 +7,6 @@
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/standard3.0-contracts"]
+	path = lib/standard3.0-contracts
+	url = https://github.com/standardweb3/standard3.0-contracts
