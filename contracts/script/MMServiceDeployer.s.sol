@@ -11,6 +11,9 @@ import {ISlasher} from "@eigenlayer/contracts/interfaces/ISlasher.sol";
 import {StrategyBaseTVLLimits} from "@eigenlayer/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "@eigenlayer/test/mocks/EmptyContract.sol";
 
+import {MatchingEngine} from "@standardweb3/src/exchange/MatchingEngine.sol";
+import {OrderbookFactory} from "@standardweb3/src/exchange/orderbooks/OrderbookFactory.sol";
+
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import {Quorum, StrategyParams} from "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
 import "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
@@ -36,7 +39,7 @@ contract HelloWorldDeployer is Script, Utils {
     // Hello World contracts
     ProxyAdmin public helloWorldProxyAdmin;
     PauserRegistry public helloWorldPauserReg;
-    
+
     ECDSAStakeRegistry public stakeRegistry;
     ECDSAStakeRegistry public stakeRegistryImplementation;
 
@@ -204,27 +207,23 @@ contract HelloWorldDeployer is Script, Utils {
             );
         }
 
-        {   
+        {
             StrategyParams[]
                 memory quorumsStrategyParams = new StrategyParams[](
                     numStrategies
-            );
-            
+                );
+
             for (uint j = 0; j < numStrategies; j++) {
                 quorumsStrategyParams[j] = StrategyParams({
-                        strategy: deployedStrategyArray[j],
-                        multiplier: 10_000
-                    });
+                    strategy: deployedStrategyArray[j],
+                    multiplier: 10_000
+                });
             }
-        
-            Quorum memory quorum = Quorum(
-                quorumsStrategyParams
-            );
+
+            Quorum memory quorum = Quorum(quorumsStrategyParams);
 
             helloWorldProxyAdmin.upgradeAndCall(
-                TransparentUpgradeableProxy(
-                    payable(address(stakeRegistry))
-                ),
+                TransparentUpgradeableProxy(payable(address(stakeRegistry))),
                 address(stakeRegistryImplementation),
                 abi.encodeWithSelector(
                     ECDSAStakeRegistry.initialize.selector,
@@ -235,6 +234,20 @@ contract HelloWorldDeployer is Script, Utils {
             );
         }
 
+        // Third, deploy orderbook dex contract
+        {
+            OrderbookFactory orderbookFactory = new OrderbookFactory();
+            MatchingEngine matchingEngine = new MatchingEngine();
+
+            matchingEngine.initialize(
+                address(orderbookFactory),
+                address(0x34CCCa03631830cD8296c172bf3c31e126814ce9),
+                address(weth)
+            );
+
+            orderbookFactory.initialize(address(matchingEngine));
+        }
+
         MMServiceManagerImplementation = new MMServiceManager(
             address(avsDirectory),
             address(stakeRegistry),
@@ -242,9 +255,7 @@ contract HelloWorldDeployer is Script, Utils {
         );
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         helloWorldProxyAdmin.upgrade(
-            TransparentUpgradeableProxy(
-                payable(address(mmServiceManager))
-            ),
+            TransparentUpgradeableProxy(payable(address(mmServiceManager))),
             address(MMServiceManagerImplementation)
         );
 
@@ -277,7 +288,7 @@ contract HelloWorldDeployer is Script, Utils {
             "ECDSAStakeRegistry",
             address(stakeRegistry)
         );
-        
+
         string memory deployed_addresses_output = vm.serializeAddress(
             deployed_addresses,
             "ECDSAStakeRegistryImplementation",

@@ -48,8 +48,8 @@ ____OFFCHAIN_SOFTWARE___: ##
 start-operator: 
 	tsc && node dist/index.js
 
-spam-tasks:
-	tsc && node dist/createNewTasks.js
+make-trade:
+	forge script 
 
 -----------------------------: ## 
 _____HELPER_____: ## 

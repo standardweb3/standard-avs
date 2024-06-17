@@ -76,7 +76,8 @@ contract MMServiceManager is
     constructor(
         address _avsDirectory,
         address _stakeRegistry,
-        address _delegationManager
+        address _delegationManager,
+        address _matchingEngine
     )
         ECDSAServiceManagerBase(
             _avsDirectory,
@@ -84,7 +85,9 @@ contract MMServiceManager is
             address(0), // hello-world doesn't need to deal with payments
             _delegationManager
         )
-    {}
+    {
+        matchingEngine = _matchingEngine;
+    }
 
     /* FUNCTIONS */
     // NOTE: this function creates new task, assigns it a taskId
