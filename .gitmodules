@@ -10,3 +10,6 @@
 [submodule "lib/standard3.0-contracts"]
 	path = lib/standard3.0-contracts
 	url = https://github.com/standardweb3/standard3.0-contracts
+[submodule "contracts/lib/standard3.0-contracts"]
+	path = contracts/lib/standard3.0-contracts
+	url = https://github.com/standardweb3/standard3.0-contracts

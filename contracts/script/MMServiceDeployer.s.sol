@@ -11,8 +11,8 @@ import {ISlasher} from "@eigenlayer/contracts/interfaces/ISlasher.sol";
 import {StrategyBaseTVLLimits} from "@eigenlayer/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "@eigenlayer/test/mocks/EmptyContract.sol";
 
-import {MatchingEngine} from "@standardweb3/src/exchange/MatchingEngine.sol";
-import {OrderbookFactory} from "@standardweb3/src/exchange/orderbooks/OrderbookFactory.sol";
+import {MatchingEngine} from "@standardweb3/exchange/MatchingEngine.sol";
+import {OrderbookFactory} from "@standardweb3/exchange/orderbooks/OrderbookFactory.sol";
 
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import {Quorum, StrategyParams} from "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
