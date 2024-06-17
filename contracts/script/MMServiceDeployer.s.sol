@@ -13,6 +13,7 @@ import "@eigenlayer/test/mocks/EmptyContract.sol";
 
 import {MatchingEngine} from "@standardweb3/exchange/MatchingEngine.sol";
 import {OrderbookFactory} from "@standardweb3/exchange/orderbooks/OrderbookFactory.sol";
+import {WETH9} from "@standardweb3/mock/WETH9.sol";
 
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import {Quorum, StrategyParams} from "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistryEventsAndErrors.sol";
@@ -235,25 +236,26 @@ contract HelloWorldDeployer is Script, Utils {
         }
 
         // Third, deploy orderbook dex contract
-        {
-            OrderbookFactory orderbookFactory = new OrderbookFactory();
-            MatchingEngine matchingEngine = new MatchingEngine();
+        WETH9 weth = new WETH9();
+        OrderbookFactory orderbookFactory = new OrderbookFactory();
+        MatchingEngine matchingEngine = new MatchingEngine();
 
-            matchingEngine.initialize(
-                address(orderbookFactory),
-                address(0x34CCCa03631830cD8296c172bf3c31e126814ce9),
-                address(weth)
-            );
+        matchingEngine.initialize(
+            address(orderbookFactory),
+            address(0x34CCCa03631830cD8296c172bf3c31e126814ce9),
+            address(weth)
+        );
 
-            orderbookFactory.initialize(address(matchingEngine));
-        }
+        orderbookFactory.initialize(address(matchingEngine));
 
         MMServiceManagerImplementation = new MMServiceManager(
             address(avsDirectory),
             address(stakeRegistry),
-            address(delegationManager)
+            address(delegationManager),
+            address(matchingEngine)
         );
-        // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
+
+        // Fourth, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         helloWorldProxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(mmServiceManager))),
             address(MMServiceManagerImplementation)
