@@ -1,4 +1,8 @@
 type Query {
+  agentTask(id: Int!): AgentTask
+  agentTasks(where: AgentTaskFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): AgentTaskPage!
+  agent(id: String!): Agent
+  agents(where: AgentFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): AgentPage!
   analysis(id: Int!): Analysis
   analysiss(where: AnalysisFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): AnalysisPage!
   pointAccount(id: String!): PointAccount
@@ -35,6 +39,120 @@ type Query {
   askOrders(where: AskOrderFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): AskOrderPage!
 }
 
+type AgentTask {
+  id: Int!
+  name: String!
+  createdBlock: Int!
+  base: String!
+  quote: String!
+  agents(where: AgentTaskFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): AgentPage
+}
+
+type AgentPage {
+  items: [Agent!]!
+  pageInfo: PageInfo!
+}
+
+type Agent {
+  id: String!
+  assignedTask: Int!
+  lastRespondedBlock: Int!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+input AgentTaskFilter {
+  AND: [AgentTaskFilter]
+  OR: [AgentTaskFilter]
+  id: Int
+  id_not: Int
+  id_in: [Int]
+  id_not_in: [Int]
+  id_gt: Int
+  id_lt: Int
+  id_gte: Int
+  id_lte: Int
+  name: String
+  name_not: String
+  name_in: [String]
+  name_not_in: [String]
+  name_contains: String
+  name_not_contains: String
+  name_starts_with: String
+  name_ends_with: String
+  name_not_starts_with: String
+  name_not_ends_with: String
+  createdBlock: Int
+  createdBlock_not: Int
+  createdBlock_in: [Int]
+  createdBlock_not_in: [Int]
+  createdBlock_gt: Int
+  createdBlock_lt: Int
+  createdBlock_gte: Int
+  createdBlock_lte: Int
+  base: String
+  base_not: String
+  base_in: [String]
+  base_not_in: [String]
+  base_contains: String
+  base_not_contains: String
+  base_starts_with: String
+  base_ends_with: String
+  base_not_starts_with: String
+  base_not_ends_with: String
+  quote: String
+  quote_not: String
+  quote_in: [String]
+  quote_not_in: [String]
+  quote_contains: String
+  quote_not_contains: String
+  quote_starts_with: String
+  quote_ends_with: String
+  quote_not_starts_with: String
+  quote_not_ends_with: String
+}
+
+type AgentTaskPage {
+  items: [AgentTask!]!
+  pageInfo: PageInfo!
+}
+
+input AgentFilter {
+  AND: [AgentFilter]
+  OR: [AgentFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  assignedTask: Int
+  assignedTask_not: Int
+  assignedTask_in: [Int]
+  assignedTask_not_in: [Int]
+  assignedTask_gt: Int
+  assignedTask_lt: Int
+  assignedTask_gte: Int
+  assignedTask_lte: Int
+  lastRespondedBlock: Int
+  lastRespondedBlock_not: Int
+  lastRespondedBlock_in: [Int]
+  lastRespondedBlock_not_in: [Int]
+  lastRespondedBlock_gt: Int
+  lastRespondedBlock_lt: Int
+  lastRespondedBlock_gte: Int
+  lastRespondedBlock_lte: Int
+}
+
 type Analysis {
   id: Int!
   totalTrades: Int!
@@ -44,13 +162,6 @@ type Analysis {
 type AnalysisPage {
   items: [Analysis!]!
   pageInfo: PageInfo!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String
-  endCursor: String
 }
 
 input AnalysisFilter {

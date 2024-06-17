@@ -48,20 +48,20 @@ contract MMServiceManager is
     // mapping of task indices to hash of abi.encode(taskResponse, taskResponseMetadata)
     mapping(address => mapping(uint32 => bytes)) public allTaskResponses;
 
-    // mapping of each MM agents' MM task
-    mapping(address => bytes32) public allAssignedMMTasks;
+    // mapping of task id to assigned address of operator
+    mapping(uint32 => mapping(address => bool)) public assigned;
 
     // mapping of each MM task's managing pair
-    mapping(bytes32 => Pair) public allManagingPairs;
+    mapping(uint32 => Pair) public allManagingPairs;
 
     // mapping of MM task owners on task hash
-    mapping(bytes32 => address) public allTaskOwners;
+    mapping(uint32 => address) public allTaskOwners;
 
     // event for agent registration on MM task
-    event MMAgentRegistered(bytes32 taskHash, address agent);
+    event MMAgentRegistered(uint32 taskIndex, address agent);
 
     // event for agent penalty on MM task
-    event MMAgentPenalized(bytes32 taskHash, address agent);
+    event MMAgentPenalized(uint32 taskIndex, address agent);
 
     /* MODIFIERS */
     modifier onlyOperator() {
@@ -101,30 +101,29 @@ contract MMServiceManager is
         // store hash of task onchain, emit event, and increase taskNum
         bytes32 taskHash = keccak256(abi.encode(newTask));
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(newTask));
-        allManagingPairs[taskHash] = Pair({base: base, quote: quote});
-        emit NewTaskCreated(latestTaskNum, newTask);
+        allManagingPairs[latestTaskNum] = Pair({base: base, quote: quote});
+        allTaskOwners[latestTaskNum] = msg.sender;
+        emit NewTaskCreated(latestTaskNum, newTask, taskHash, base, quote);
         latestTaskNum = latestTaskNum + 1;
-        allTaskOwners[taskHash] = msg.sender;
     }
 
-    function addMMAgent(Task calldata task, address agent) external {
-        bytes32 taskHash = keccak256(abi.encode(task));
-        if (allTaskOwners[taskHash] != msg.sender) {
+    function addMMAgent(uint32 taskIndex, address agent) external {
+        if (allTaskOwners[taskIndex] != msg.sender) {
             revert InvalidAccess(MM_ROLE, msg.sender);
         }
-        Pair memory pair = allManagingPairs[taskHash];
+        Pair memory pair = allManagingPairs[taskIndex];
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
         TransferHelper.safeApprove(
             pair.quote,
             address(this),
             type(uint256).max
         );
-        emit MMAgentRegistered(taskHash, agent);
+        assigned[taskIndex][agent] = true;
+        emit MMAgentRegistered(taskIndex, agent);
     }
 
     // NOTE: this function responds to existing tasks.
     function respondToTask(
-        Task calldata task,
         uint32 referenceTaskIndex,
         bool isBid,
         uint256 price,
@@ -132,11 +131,10 @@ contract MMServiceManager is
         uint32 n,
         bytes calldata signature
     ) external onlyOperator {
-        bytes32 taskHash = keccak256(abi.encode(task));
         // check that the task is valid, hasn't been responsed yet, and is being responded in time
         require(
-            taskHash == allTaskHashes[referenceTaskIndex],
-            "supplied task does not match the one recorded in the contract"
+            assigned[referenceTaskIndex][msg.sender],
+            "supplied task is not assigned to you"
         );
         // some logical checks
         require(
@@ -144,7 +142,7 @@ contract MMServiceManager is
             "Operator has already responded to the task"
         );
 
-        Pair memory pair = allManagingPairs[taskHash];
+        Pair memory pair = allManagingPairs[referenceTaskIndex];
 
         // Approve just in case approval amount has run out, later add check on allowance
         TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
@@ -188,7 +186,76 @@ contract MMServiceManager is
         // updating the storage with task responsea
         allTaskResponses[msg.sender][referenceTaskIndex] = signature;
 
+        bytes32 taskHash = allTaskHashes[referenceTaskIndex];
+
         // emitting event
-        emit TaskResponded(referenceTaskIndex, task, msg.sender);
+        emit TaskResponded(referenceTaskIndex, taskHash, msg.sender);
+    }
+
+    function respondToTaskETH(
+        uint32 referenceTaskIndex,
+        bool isBid,
+        uint256 price,
+        uint256 amount,
+        uint32 n
+    ) external payable onlyOperator {
+
+        // check that the task is valid, hasn't been responsed yet, and is being responded in time
+        require(
+            assigned[referenceTaskIndex][msg.sender],
+            "supplied task does not match the one recorded in the contract"
+        );
+        // some logical checks
+        /* TODO: add logical checks on spread for matching an order
+        require(
+            allTaskResponses[msg.sender][referenceTaskIndex].length == 0,
+            "Operator has already responded to the task"
+        );
+        */
+
+        Pair memory pair = allManagingPairs[referenceTaskIndex];
+
+        // Approve just in case approval amount has run out, later add check on allowance
+        TransferHelper.safeApprove(pair.base, address(this), type(uint256).max);
+        TransferHelper.safeApprove(
+            pair.quote,
+            address(this),
+            type(uint256).max
+        );
+
+        // Execute trade
+        TransferHelper.safeTransferFrom(
+            isBid ? pair.quote : pair.base,
+            msg.sender,
+            address(this),
+            amount
+        );
+        if (isBid) {
+            IEngine(matchingEngine).limitBuyETH{value: amount}(
+                pair.base,
+                price,
+                true,
+                n,
+                0,
+                msg.sender
+            );
+        } else {
+            IEngine(matchingEngine).limitSellETH{value: amount}(
+                pair.quote,
+                price,
+                true,
+                n,
+                0,
+                msg.sender
+            );
+        }
+
+        // updating the storage with task responsea
+        // allTaskResponses[msg.sender][referenceTaskIndex] = signature;
+
+        bytes32 taskHash = allTaskHashes[referenceTaskIndex];
+
+        // emitting event
+        emit TaskResponded(referenceTaskIndex, taskHash, msg.sender);
     }
 }

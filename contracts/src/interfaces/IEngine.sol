@@ -55,6 +55,16 @@ interface IEngine {
         address recipient
     ) external;
 
+    function limitBuyETH(
+        address base,
+        uint256 price,
+        bool isMaker,
+        uint32 n,
+        uint32 uid,
+        address recipient
+    ) external payable;
+
+
     function limitSell(
         address base,
         address quote,
@@ -65,6 +75,15 @@ interface IEngine {
         uint32 uid,
         address recipient
     ) external;
+
+    function limitSellETH(
+        address quote,
+        uint256 price,
+        bool isMaker,
+        uint32 n,
+        uint32 uid,
+        address recipient
+    ) external payable;
 
     function getPair(
         address base,

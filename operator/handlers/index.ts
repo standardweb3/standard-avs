@@ -15,9 +15,9 @@ export {
 
 
 // Agent related event functions
-export * from "./MMAgentAdded";
+//export * from "./MMAgentPenalized";
 
-export * from "./MMAgentPenalized";
+export * from "./MMAgentRegistered";
 
 export * from "./NewTaskCreated";
 

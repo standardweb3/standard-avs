@@ -3,9 +3,9 @@ pragma solidity ^0.8.9;
 
 interface IMMServiceManager {
     // EVENTS
-    event NewTaskCreated(uint32 indexed taskIndex, Task task);
+    event NewTaskCreated(uint32 indexed taskIndex, Task task, bytes32 taskHash, address base, address quote);
 
-    event TaskResponded(uint32 indexed taskIndex, Task task, address operator);
+    event TaskResponded(uint32 indexed taskIndex, bytes32 taskHash, address operator);
 
     // STRUCTS
     struct Task {
@@ -19,7 +19,6 @@ interface IMMServiceManager {
 
     // NOTE: this function is called by operators to respond to a task.
     function respondToTask(
-        Task calldata task,
         uint32 referenceTaskIndex,
         bool isBid,
         uint256 price,

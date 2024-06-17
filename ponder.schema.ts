@@ -2,21 +2,26 @@ import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
   AgentTask: p.createTable({
-    /// task hash
-    id: p.string(),
+    /// task index
+    id: p.int(),
     /// task name
     name: p.string(),
+    /// task created block
+    createdBlock: p.int(),
     /// managing base asset
     base: p.string(),
     /// managing quote asset
     quote: p.string(),
-    /// agents which works on it
-    agents: p.string().references("Agent.id")
+    /// task index
+    agents: p.many("Agent.assignedTask"),
   }),
   Agent: p.createTable({
+    /// {agent address}-{task index}
     id: p.string(),
-    name: p.string(),
-    assignedTasks: p.string().references("AgentTask.id")
+    /// assigned task index
+    assignedTask: p.int().references("AgentTask.id"),
+    /// last responded block
+    lastRespondedBlock: p.int(),
   }),
   Analysis: p.createTable({
     id: p.int(),

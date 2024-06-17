@@ -53,6 +53,6 @@ spam-tasks:
 
 -----------------------------: ## 
 _____HELPER_____: ## 
-tests-contract: ## runs all forge tests
+test-contract: ## runs all forge tests
 	cd contracts && forge test
 
