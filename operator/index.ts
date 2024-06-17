@@ -10,7 +10,7 @@ import {
   OrderPlacedHandleAccountOrders,
   PairAddedHandleTokenPairOrderbook,
 } from "./handlers";
-import { createOrder, getPairBalance, respondToTask } from "./onchain";
+import { respondToTask } from "./onchain";
 import { privateKeyToAccount } from "viem/accounts";
 import { ServiceManager } from "./consts";
 
