@@ -43,8 +43,8 @@ Where additional sophistication with AVSs come into the picture:
 |                     | Standard Eigenlayer AVS market maker                                                                                                         | CoWswap Solver                                       |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Mission             | Spread buy/sell orders in the orderbook within 2% spread on market price                                                                     | Match orders in whatever solvers want                |
-| Verification method | Measure bid/ask head price and check with last market price that its difference is within 2% of the market price in orderbook smart contract | Moo                                                  |
-| Transparent         | Yes                                                                                                                                          | Moo                                                  |
+| Verification method | Measure bid/ask head price and check with last market price that its difference is within 2% of the market price in orderbook smart contract | N/A                                                  |
+| Transparent         | Yes                                                                                                                                          | N/A                                                  |
 | Centralization Risk | None, all transparent and clear, all done in smart contract                                                                                  | Payment for order flow can happen. |
 
 
